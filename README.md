@@ -1,11 +1,15 @@
 # prettiest
 
 Implementation of Jean-Philippe Bernardy's [A Pretty But Not Greedy Printer (Functional Pearl). PACMPL 1(ICFP): 6:1-6:21 (2017)](https://jyp.github.io/pdf/Prettiest.pdf) in OCaml.
-The author of the paper has [a version in Haskell](https://github.com/jyp/prettiest).
+The author of the paper has a [version in Haskell](https://github.com/jyp/prettiest).
 
 I make no promises about performance.
 
+[Documentation](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasfrom/prettiest/master/doc/prettiest/Prettiest/index.html)
+
 # Example from the paper
+
+A version of this example is included in the test library.
 
 ```ocaml
 type sexpr =
