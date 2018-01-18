@@ -2,7 +2,7 @@
 
 (library
   ((name prettiest_tests)
-   (modules (quick))
+   (modules (quick sexpr))
    (library_flags (-linkall))
    (libraries (core prettiest))
    (preprocess (pps (ppx_jane)))))
