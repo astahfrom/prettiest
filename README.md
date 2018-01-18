@@ -7,7 +7,7 @@ I make no promises about performance.
 
 # Example from the paper
 
-```
+```ocaml
 type sexpr =
   | Atom of string
   | Sexpr of sexpr list
