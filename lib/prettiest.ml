@@ -168,10 +168,9 @@ end
 
 open Infix
 
-let rec fold f = function
+let fold f = function
   | [] -> empty
-  | [x] -> x
-  | x :: xs -> f x (fold f xs)
+  | x :: xs -> List.fold ~init:x ~f:f xs
 
 let vcat = fold ($$)
 
@@ -183,15 +182,19 @@ let sep = function
   | [] -> empty
   | xs -> hsep xs <|> vcat xs
 
-let rec intersperse ~sep:sep = function
-  | [] -> []
-  | [x] -> [x]
-  | x :: xs -> (x <> sep) :: intersperse ~sep:sep xs
+let intersperse ~sep:sep =
+  let rec go acc = function
+    | [] -> List.rev acc
+    | [x] -> go (x :: acc) []
+    | x :: xs -> go ((x <> sep) :: acc) xs
+  in go []
 
-let rec intersperse_map ~f:f ~sep:sep = function
-  | [] -> []
-  | [x] -> [f x]
-  | x :: xs -> (f x <> sep) :: intersperse_map ~f:f ~sep:sep xs
+let intersperse_map ~f:f ~sep:sep =
+  let rec go acc = function
+    | [] -> List.rev acc
+    | [x] -> go (f x :: acc) []
+    | x :: xs -> go ((f x <> sep) :: acc) xs
+  in go []
 
 module Characters = struct
   let qmark = text "?"
