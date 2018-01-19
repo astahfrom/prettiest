@@ -9,7 +9,8 @@ I make no promises about performance.
 
 # Example from the paper
 
-A version of this example is included in the test library.
+A version of this example is included in the test folder.
+That folder also includes a larger example of pretty printing types.
 
 ```ocaml
 type sexpr =
