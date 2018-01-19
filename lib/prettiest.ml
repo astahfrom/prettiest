@@ -62,29 +62,27 @@ end = struct
     m1.last_width <= m2.last_width
 end
 
-module Text : sig
-  type t
-  include Layout with type t := t
-end = struct
-  type t = unit -> string list
+module Text : Layout = struct
+  type t = string list lazy_t
 
-  let render xs = String.concat ~sep:"\n" (xs ())
+  let render xs = String.concat ~sep:"\n" (force xs)
 
-  let text s = fun () -> [s]
+  let text s = lazy [s]
 
   let (<>) xs ys =
-    fun () ->
-      match ys () with
+    lazy (
+      match force ys with
       | [] -> failwith "<>: empty ys"
       | y :: ys ->
-        let xs = xs () in
+        let xs = force xs in
         match List.split_n xs (List.length xs - 1) with
         | xs0, [x] ->
           let indent = replicate_char (String.length x) ' ' in
           xs0 @ [x ^ y] @ List.map ~f:(fun y -> indent ^ y) ys
         | _ -> failwith "<>: empty xs"
+    )
 
-  let flush xs = fun () -> xs () @ [""]
+  let flush xs = lazy (force xs @ [""])
 end
 
 module MeasureText : sig
