@@ -63,7 +63,7 @@ end = struct
 end
 
 module Text : Layout = struct
-  type t = string list lazy_t
+  type t = string list Lazy.t
 
   let render xs = String.concat ~sep:"\n" (force xs)
 
