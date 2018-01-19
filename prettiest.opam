@@ -1,4 +1,5 @@
 opam-version: "1.2"
+name: "prettiest"
 version: "0.0.1"
 maintainer: "andro.from@gmail.com"
 authors: ["Andreas Halkjær From"]
@@ -13,7 +14,5 @@ depends: [
   "base"
   "ppx_compare"
   "ocaml-migrate-parsetree"
+  "jbuilder" {build}
 ]
-descr: "
-Implementation of Jean-Philippe Bernardy's A Pretty But Not Greedy Printer (Functional Pearl). PACMPL 1(ICFP): 6:1-6:21 (2017)(https://jyp.github.io/pdf/Prettiest.pdf).
-"
