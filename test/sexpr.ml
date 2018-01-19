@@ -1,4 +1,4 @@
-open Base
+open Core
 
 type sexpr =
   | Atom of string
@@ -22,12 +22,11 @@ let test_data =
 let fit = Option.value ~default:"did not fit"
 
 let%expect_test "sexp" =
-  let open Stdio in
-  test_data |> pretty_sexpr |> Prettiest.render 80 |> fit |> Stdio.print_endline;
+  test_data |> pretty_sexpr |> Prettiest.render 80 |> fit |> print_endline;
   Out_channel.newline stdout;
-  test_data |> pretty_sexpr |> Prettiest.render 50 |> fit |> Stdio.print_endline;
+  test_data |> pretty_sexpr |> Prettiest.render 50 |> fit |> print_endline;
   Out_channel.newline stdout;
-  test_data |> pretty_sexpr |> Prettiest.render 20 |> fit |> Stdio.print_endline;
+  test_data |> pretty_sexpr |> Prettiest.render 20 |> fit |> print_endline;
   [%expect {|
     ((abcde ((a b c d) (a b c d) (a b c d) (a b c d)))
      (abcdefgh ((a b c d) (a b c d) (a b c d) (a b c d))))
