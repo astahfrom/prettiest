@@ -71,7 +71,7 @@ module Characters : sig
   val qmark : t
   val bang : t
   val at : t
-  val pound : t
+  val sharp : t
   val dollar : t
   val percent : t
   val caret : t
@@ -82,6 +82,7 @@ module Characters : sig
   val dot : t
   val bar : t
   val colon : t
+  val scolon : t
   val equals : t
 
   val plus : t
