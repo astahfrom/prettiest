@@ -63,26 +63,24 @@ end = struct
 end
 
 module Text : Layout = struct
-  type t = string list Lazy.t
+  type t = string list
 
-  let render xs = String.concat ~sep:"\n" (force xs)
+  let render xs = String.concat ~sep:"\n" xs
 
-  let text s = lazy [s]
+  let text s = [s]
 
   let (<>) xs ys =
-    lazy (
-      match force ys with
-      | [] -> failwith "<>: empty ys"
-      | y :: ys ->
-        let xs = force xs in
-        match List.split_n xs (List.length xs - 1) with
-        | xs0, [x] ->
-          let indent = replicate_char (String.length x) ' ' in
-          xs0 @ [x ^ y] @ List.map ~f:(fun y -> indent ^ y) ys
-        | _ -> failwith "<>: empty xs"
-    )
+    match ys with
+    | [] -> failwith "<>: empty ys"
+    | y :: ys ->
+      let xs = xs in
+      match List.split_n xs (List.length xs - 1) with
+      | xs0, [x] ->
+        let indent = replicate_char (String.length x) ' ' in
+        xs0 @ [x ^ y] @ List.map ~f:(fun y -> indent ^ y) ys
+      | _ -> failwith "<>: empty xs"
 
-  let flush xs = lazy (force xs @ [""])
+  let flush xs = xs @ [""]
 end
 
 module MeasureText : sig
@@ -91,7 +89,7 @@ module MeasureText : sig
   include Layout with type t := t
   include Poset with type t := t
 end = struct
-  type t = Measure.t * Text.t
+  type t = Measure.t * Text.t Lazy.t
 
   let compare (m, _) (m', _) = Measure.compare m m'
 
@@ -101,14 +99,14 @@ end = struct
 
   let (<>) (m1, a) (m2, b) = (
     Measure.(m1 <> m2),
-    Text.(a <> b)
+    lazy Text.(force a <> force b)
   )
 
-  let flush (m, a) = (Measure.flush m, Text.flush a)
+  let flush (m, a) = (Measure.flush m, lazy (Text.flush (force a)))
 
-  let text s = (Measure.text s, Text.text s)
+  let text s = (Measure.text s, lazy (Text.text s))
 
-  let render (_, a) = Text.render a
+  let render (_, a) = Text.render (force a)
 end
 
 type t = int -> MeasureText.t list
