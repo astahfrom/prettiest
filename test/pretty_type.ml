@@ -1,7 +1,8 @@
 open Core
-open Prettiest
-open Prettiest.Infix
-open Prettiest.Characters
+
+module P = Prettiest
+open P.Infix
+open P.Characters
 
 module Type = struct
   type name = string
@@ -26,9 +27,9 @@ module Type = struct
     | Forall _ -> (3, 2)
 end
 
-let arrow = text "->"
+let arrow = P.text "->"
 
-let tag c = text c <> colon
+let tag c = P.text c <> colon
 
 let parens x = lparen <> x <> rparen
 
@@ -36,42 +37,42 @@ let rec transform paren go above =
   go (fun self -> paren above self (transform paren go self)) above
 
 let pretty_record xs =
-  choice [
-    lbrace <> hsep xs <> rbrace;
-    lbrace <+> vcat xs <+> rbrace;
-    (lbrace <+> vcat xs <> comma) $$ rbrace;
+  P.choice [
+    lbrace <> P.hsep xs <> rbrace;
+    lbrace <+> P.vcat xs <+> rbrace;
+    (lbrace <+> P.vcat xs <> comma) $$ rbrace;
   ]
 
 let pretty_elim xs =
-  let flat = intersperse ~sep:(space <> bar) xs in
+  let flat = P.intersperse ~sep:(space <> bar) xs in
   let non_flat = match xs with
     | [] -> []
     | cx :: xs -> (lbrack <+> cx) :: List.map xs ~f:(fun cx -> bar <+> cx)
-  in choice [
-    lbrack <+> hsep flat <+> rbrack;
-    vcat non_flat </> rbrack;
+  in P.choice [
+    lbrack <+> P.hsep flat <+> rbrack;
+    P.vcat non_flat </> rbrack;
   ]
 
-let pretty_type' f : Type.t -> t = function
-  | Var x -> text x
-  | Alias (name, []) -> text name
+let pretty_type' f : Type.t -> P.t = function
+  | Var x -> P.text x
+  | Alias (name, []) -> P.text name
   | Alias (name, ts) ->
     let ts' = List.map ~f:f ts in
-    text name <//> sep ts'
+    P.text name <//> P.sep ts'
   | Arrow ts ->
-    let flat = intersperse_map ~f:f ~sep:(space <> arrow) ts in
-    sep flat
+    let flat = P.intersperse_map ~f:f ~sep:(space <> arrow) ts in
+    P.sep flat
   | Forall (xs, t) ->
-    let xs' = List.map ~f:text xs in
+    let xs' = List.map ~f:P.text xs in
     let t' = f t in
-    (text "forall" <//> sep xs' <> dot) <//> t'
+    (P.text "forall" <//> P.sep xs' <> dot) <//> t'
   | Sum xs ->
     let pair (c, x) = tag c <//> f x in
     let xs' = List.map ~f:pair xs in
     pretty_elim xs'
   | Product xs ->
     let pair (c, x) = tag c <//> f x in
-    let xs' = intersperse_map ~f:pair ~sep:comma xs in
+    let xs' = P.intersperse_map ~f:pair ~sep:comma xs in
     pretty_record xs'
 
 let paren_prec prec above self doc =
@@ -85,11 +86,11 @@ let fit = Option.value ~default:"did not fit"
 
 let print f x =
   let doc = f x in
-  Prettiest.render 80 doc |> fit |> print_endline;
+  P.render 80 doc |> fit |> print_endline;
   Out_channel.newline stdout;
-  Prettiest.render 50 doc |> fit |> print_endline;
+  P.render 50 doc |> fit |> print_endline;
   Out_channel.newline stdout;
-  Prettiest.render 20 doc |> fit |> print_endline
+  P.render 20 doc |> fit |> print_endline
 
 let print_type = print pretty_type
 

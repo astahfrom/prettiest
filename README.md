@@ -7,6 +7,12 @@ I make no promises about performance.
 
 [Documentation](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasfrom/prettiest/master/doc/prettiest/Prettiest/index.html)
 
+# Installation
+
+This package is on OPAM:
+
+    opam install prettiest
+
 # Example from the paper
 
 A version of this example is included in the test folder.
@@ -18,11 +24,10 @@ type sexpr =
   | Sexpr of sexpr list
 
 let rec pretty_sexpr xs =
-  let open Prettiest in
   let open Prettiest.Infix in
   match xs with
-  | Atom s -> text s
-  | Sexpr xs -> text "(" <> (sep (List.map ~f:pretty_sexpr xs)) <> text ")"
+  | Atom s -> !^ s
+  | Sexpr xs -> !^ "(" <> (Prettiest.sep (List.map ~f:pretty_sexpr xs)) <> !^ ")"
 
 let test_data =
   let abcd = Sexpr [Atom "a"; Atom "b"; Atom "c"; Atom "d"] in

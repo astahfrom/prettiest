@@ -5,11 +5,10 @@ type sexpr =
   | Sexpr of sexpr list
 
 let rec pretty_sexpr xs =
-  let open Prettiest in
   let open Prettiest.Infix in
   match xs with
-  | Atom s -> text s
-  | Sexpr xs -> text "(" <> (sep (List.map ~f:pretty_sexpr xs)) <> text ")"
+  | Atom s -> !^ s
+  | Sexpr xs -> !^ "(" <> (Prettiest.sep (List.map ~f:pretty_sexpr xs)) <> !^ ")"
 
 let test_data =
   let abcd = Sexpr [Atom "a"; Atom "b"; Atom "c"; Atom "d"] in
