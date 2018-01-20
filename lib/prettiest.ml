@@ -198,7 +198,7 @@ module Characters = struct
   let qmark = text "?"
   let bang = text "!"
   let at = text "@"
-  let pound = text "#"
+  let sharp = text "#"
   let dollar = text "$"
   let percent = text "%"
   let caret = text "^"
@@ -209,6 +209,7 @@ module Characters = struct
   let dot = text "."
   let bar = text "|"
   let colon = text ":"
+  let scolon = text ";"
   let equals = text "="
 
   let plus = text "+"
