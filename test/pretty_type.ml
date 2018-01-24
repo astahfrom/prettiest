@@ -1,9 +1,5 @@
 open Core
 
-module P = Prettiest
-open P.Infix
-open P.Characters
-
 module Type = struct
   type name = string
 
@@ -27,72 +23,83 @@ module Type = struct
     | Forall _ -> (3, 2)
 end
 
-let arrow = P.text "->"
+module PrettyType (P : Prettiest.S) = struct
+  open P.Infix
+  open P.Characters
 
-let tag c = P.text c <> colon
+  let arrow = P.text "->"
 
-let parens x = lparen <> x <> rparen
+  let tag c = P.text c <> colon
 
-let rec transform paren go above =
-  go (fun self -> paren above self (transform paren go self)) above
+  let parens x = lparen <> x <> rparen
 
-let pretty_record xs =
-  P.choice [
-    lbrace <> P.hsep xs <> rbrace;
-    lbrace <+> P.vcat xs <+> rbrace;
-    (lbrace <+> P.vcat xs <> comma) $$ rbrace;
-  ]
+  let rec transform paren go above =
+    go (fun self -> paren above self (transform paren go self)) above
 
-let pretty_elim xs =
-  let flat = P.intersperse ~sep:(space <> bar) xs in
-  let non_flat = match xs with
-    | [] -> []
-    | cx :: xs -> (lbrack <+> cx) :: List.map xs ~f:(fun cx -> bar <+> cx)
-  in P.choice [
-    lbrack <+> P.hsep flat <+> rbrack;
-    P.vcat non_flat </> rbrack;
-  ]
+  let pretty_record xs =
+    P.choice [
+      lbrace <> P.hsep xs <> rbrace;
+      lbrace <+> P.vcat xs <+> rbrace;
+      (lbrace <+> P.vcat xs <> comma) $$ rbrace;
+    ]
 
-let pretty_type' f : Type.t -> P.t = function
-  | Var x -> P.text x
-  | Alias (name, []) -> P.text name
-  | Alias (name, ts) ->
-    let ts' = List.map ~f:f ts in
-    P.text name <//> P.sep ts'
-  | Arrow ts ->
-    let flat = P.intersperse_map ~f:f ~sep:(space <> arrow) ts in
-    P.sep flat
-  | Forall (xs, t) ->
-    let xs' = List.map ~f:P.text xs in
-    let t' = f t in
-    (P.text "forall" <//> P.sep xs' <> dot) <//> t'
-  | Sum xs ->
-    let pair (c, x) = tag c <//> f x in
-    let xs' = List.map ~f:pair xs in
-    pretty_elim xs'
-  | Product xs ->
-    let pair (c, x) = tag c <//> f x in
-    let xs' = P.intersperse_map ~f:pair ~sep:comma xs in
-    pretty_record xs'
+  let pretty_elim xs =
+    let flat = P.intersperse ~sep:(space <> bar) xs in
+    let non_flat = match xs with
+      | [] -> []
+      | cx :: xs -> (lbrack <+> cx) :: List.map xs ~f:(fun cx -> bar <+> cx)
+    in P.choice [
+      lbrack <+> P.hsep flat <+> rbrack;
+      P.vcat non_flat </> rbrack;
+    ]
 
-let paren_prec prec above self doc =
-  let (_, a) = prec above
-  and (b, _) = prec self in
-  if a < b then parens doc else doc
+  let pretty_type' f : Type.t -> P.t = function
+    | Var x -> P.text x
+    | Alias (name, []) -> P.text name
+    | Alias (name, ts) ->
+      let ts' = List.map ~f:f ts in
+      P.text name <//> P.sep ts'
+    | Arrow ts ->
+      let flat = P.intersperse_map ~f:f ~sep:(space <> arrow) ts in
+      P.sep flat
+    | Forall (xs, t) ->
+      let xs' = List.map ~f:P.text xs in
+      let t' = f t in
+      (P.text "forall" <//> P.sep xs' <> dot) <//> t'
+    | Sum xs ->
+      let pair (c, x) = tag c <//> f x in
+      let xs' = List.map ~f:pair xs in
+      pretty_elim xs'
+    | Product xs ->
+      let pair (c, x) = tag c <//> f x in
+      let xs' = P.intersperse_map ~f:pair ~sep:comma xs in
+      pretty_record xs'
 
-let pretty_type = transform (paren_prec Type.prec) pretty_type'
+  let paren_prec prec above self doc =
+    let (_, a) = prec above
+    and (b, _) = prec self in
+    if a < b then parens doc else doc
+
+  let pretty_type = transform (paren_prec Type.prec) pretty_type'
+end
 
 let fit = Option.value ~default:"did not fit"
 
-let print f x =
-  let doc = f x in
-  P.render 80 doc |> fit |> print_endline;
-  Out_channel.newline stdout;
-  P.render 50 doc |> fit |> print_endline;
-  Out_channel.newline stdout;
-  P.render 20 doc |> fit |> print_endline
+module P80 = Prettiest.Make (struct let width = 80 end)
+module PT80 = PrettyType (P80)
 
-let print_type = print pretty_type
+module P50 = Prettiest.Make (struct let width = 50 end)
+module PT50 = PrettyType (P50)
+
+module P20 = Prettiest.Make (struct let width = 20 end)
+module PT20 = PrettyType (P20)
+
+let print_type t =
+  PT80.pretty_type t |> P80.render |> fit |> print_endline;
+  Out_channel.newline stdout;
+  PT50.pretty_type t |> P50.render |> fit |> print_endline;
+  Out_channel.newline stdout;
+  PT20.pretty_type t |> P20.render |> fit |> print_endline
 
 let%expect_test "type 1" =
   Forall (

@@ -13,48 +13,8 @@ This package is on OPAM:
 
     opam install prettiest
 
-# Example from the paper
+# Examples
 
-A version of this example is included in the test folder.
+A version of the sexpr example is included in the test folder.
+
 That folder also includes a larger example of pretty printing types.
-
-```ocaml
-type sexpr =
-  | Atom of string
-  | Sexpr of sexpr list
-
-let rec pretty_sexpr xs =
-  let open Prettiest.Infix in
-  match xs with
-  | Atom s -> !^ s
-  | Sexpr xs -> !^ "(" <> (Prettiest.sep (List.map ~f:pretty_sexpr xs)) <> !^ ")"
-
-let test_data =
-  let abcd = Sexpr [Atom "a"; Atom "b"; Atom "c"; Atom "d"] in
-  let abcd4 = Sexpr [abcd; abcd; abcd; abcd] in
-  Sexpr [
-    Sexpr [Atom "abcde"; abcd4];
-    Sexpr [Atom "abcdefgh"; abcd4];
-  ]
-
-let fit = Option.value ~default:"did not fit"
-
-let%expect_test "sexp" =
-  test_data |> pretty_sexpr |> Prettiest.render 80 |> fit |> print_endline;
-  Out_channel.newline stdout;
-  test_data |> pretty_sexpr |> Prettiest.render 20 |> fit |> print_endline;
-  [%expect {|
-    ((abcde ((a b c d) (a b c d) (a b c d) (a b c d)))
-     (abcdefgh ((a b c d) (a b c d) (a b c d) (a b c d))))
-
-    ((abcde ((a b c d)
-             (a b c d)
-             (a b c d)
-             (a b c d)))
-     (abcdefgh
-      ((a b c d)
-       (a b c d)
-       (a b c d)
-       (a b c d))))
-  |}]
-```

@@ -109,129 +109,212 @@ end = struct
   let render (_, a) = Text.render (force a)
 end
 
-type t = int -> MeasureText.t list
-
-let pareto =
-  let rec go acc = function
-    | [] -> acc
-    | (x :: xs) ->
-      if List.exists acc ~f:(fun y -> MeasureText.(y << x))
-      then go acc xs
-      else go (x :: List.filter acc ~f:(fun y -> not MeasureText.(x << y))) xs
-  in go []
-
-let (<>) xs ys = fun w ->
-  List.cartesian_product (xs w) (ys w) |>
-  List.map ~f:(fun (x, y) -> MeasureText.(x <> y)) |>
-  List.filter ~f:(MeasureText.valid w) |>
-  pareto
-
-let flush xs = fun w -> pareto (List.map ~f:MeasureText.flush (xs w))
-
-let text s = fun w ->
-  List.filter ~f:(MeasureText.valid w)
-    [MeasureText.text s]
-
-let render w xs =
-  List.min_elt (xs w) ~cmp:MeasureText.compare |>
-  Option.map ~f:MeasureText.render
-
-let fail = fun _ -> []
-
-let choice xss = fun w -> List.concat_map ~f:(fun xs -> xs w) xss |> pareto
-
-let empty = text ""
-
-let nest n x = text (replicate_char n ' ') <> x
-
-module Infix = struct
-  let (!^) = text
-
-  let (<>) = (<>)
-  let ($$) a b = flush a <> b
-  let (<|>) xs ys = choice [xs; ys]
-
-  let (<+>) x y = x <> text " " <> y
-
-  let (</>) a b = choice [
-      a <+> b;
-      a $$ b;
-    ]
-
-  let (<//>) a b = choice [
-      a <+> b;
-      a $$ nest 2 b;
-    ]
+module type Width = sig
+  val width : int
 end
 
-open Infix
+module type S = sig
+  type t
 
-let fold f = function
-  | [] -> empty
-  | x :: xs -> List.fold ~init:x ~f:f xs
+  include Width
 
-let vcat = fold ($$)
+  val text : string -> t
+  val flush : t -> t
+  val hcat : t list -> t
+  val hsep : t list -> t
+  val vcat : t list -> t
+  val render : t -> string option
+  val choice : t list -> t
+  val fail : t
+  val empty : t
+  val nest : int -> t -> t
+  val sep : t list -> t
+  val intersperse : sep:t -> t list -> t list
+  val intersperse_map : f:('a -> t) -> sep:t -> 'a list -> t list
 
-let hcat = fold (<>)
+  module Infix : sig
+    val (!^) : string -> t
+    val (<>) : t -> t -> t
+    val ($$) : t -> t -> t
+    val (<|>) : t -> t -> t
+    val (<+>) : t -> t -> t
+    val (</>) : t -> t -> t
+    val (<//>) : t -> t -> t
+  end
 
-let hsep = fold (<+>)
+  module Characters : sig
+    val qmark : t
+    val bang : t
+    val at : t
+    val sharp : t
+    val dollar : t
+    val percent : t
+    val caret : t
+    val ampersand : t
+    val star : t
 
-let sep = function
-  | [] -> empty
-  | xs -> hsep xs <|> vcat xs
+    val comma : t
+    val dot : t
+    val bar : t
+    val colon : t
+    val scolon : t
+    val equals : t
 
-let intersperse ~sep:sep =
-  let rec go acc = function
-    | [] -> List.rev acc
-    | [x] -> go (x :: acc) []
-    | x :: xs -> go ((x <> sep) :: acc) xs
-  in go []
+    val plus : t
+    val minus : t
+    val underscore : t
+    val tilde : t
 
-let intersperse_map ~f:f ~sep:sep =
-  let rec go acc = function
-    | [] -> List.rev acc
-    | [x] -> go (f x :: acc) []
-    | x :: xs -> go ((f x <> sep) :: acc) xs
-  in go []
+    val squote : t
+    val dquote : t
+    val bquote : t
 
-module Characters = struct
-  let qmark = text "?"
-  let bang = text "!"
-  let at = text "@"
-  let sharp = text "#"
-  let dollar = text "$"
-  let percent = text "%"
-  let caret = text "^"
-  let ampersand = text "&"
-  let star = text "*"
+    val slash : t
+    val bslash : t
 
-  let comma = text ","
-  let dot = text "."
-  let bar = text "|"
-  let colon = text ":"
-  let scolon = text ";"
-  let equals = text "="
+    val lt : t
+    val gt : t
+    val lbrack : t
+    val rbrack : t
+    val lbrace : t
+    val rbrace : t
+    val lparen : t
+    val rparen : t
 
-  let plus = text "+"
-  let minus = text "-"
-  let underscore = text "_"
-  let tilde = text "~"
+    val space : t
+  end
+end
 
-  let squote = text "'"
-  let dquote = text "\""
-  let bquote = text "`"
+module Make (W : Width) : S = struct
 
-  let slash = text "/"
-  let bslash = text "\\"
+  type t = MeasureText.t list
 
-  let lt = text "<"
-  let gt = text ">"
-  let lbrack = text "["
-  let rbrack = text "]"
-  let lbrace = text "{"
-  let rbrace = text "}"
-  let lparen = text "("
-  let rparen = text ")"
+  include W
 
-  let space = text " "
+  let pareto =
+    let rec go acc = function
+      | [] -> acc
+      | (x :: xs) ->
+        if List.exists acc ~f:(fun y -> MeasureText.(y << x))
+        then go acc xs
+        else go (x :: List.filter acc ~f:(fun y -> not MeasureText.(x << y))) xs
+    in go []
+
+  let (<>) xs ys =
+    List.cartesian_product xs ys |>
+    List.filter_map ~f:(fun (x, y) ->
+        MeasureText.(
+          let xy = x <> y in
+          Option.some_if (valid W.width xy) xy
+        )) |>
+    pareto
+
+  let flush xs = pareto (List.map ~f:MeasureText.flush xs)
+
+  let text s = List.filter ~f:(MeasureText.valid W.width) [MeasureText.text s]
+
+  let render xs =
+    List.min_elt xs ~cmp:MeasureText.compare |>
+    Option.map ~f:MeasureText.render
+
+  let fail = []
+
+  let choice xss = List.concat xss |> pareto
+
+  let empty = text ""
+
+  let nest n x = text (replicate_char n ' ') <> x
+
+  module Infix = struct
+    let (!^) = text
+
+    let (<>) = (<>)
+    let ($$) a b = flush a <> b
+    let (<|>) xs ys = choice [xs; ys]
+
+    let (<+>) x y = x <> text " " <> y
+
+    let (</>) a b = choice [
+        a <+> b;
+        a $$ b;
+      ]
+
+    let (<//>) a b = choice [
+        a <+> b;
+        a $$ nest 2 b;
+      ]
+  end
+
+  open Infix
+
+  let fold f = function
+    | [] -> empty
+    | x :: xs -> List.fold ~init:x ~f:f xs
+
+  let vcat = fold ($$)
+
+  let hcat = fold (<>)
+
+  let hsep = fold (<+>)
+
+  let sep = function
+    | [] -> empty
+    | xs -> hsep xs <|> vcat xs
+
+  let intersperse ~sep:sep =
+    let rec go acc = function
+      | [] -> List.rev acc
+      | [x] -> go (x :: acc) []
+      | x :: xs -> go ((x <> sep) :: acc) xs
+    in go []
+
+  let intersperse_map ~f:f ~sep:sep =
+    let rec go acc = function
+      | [] -> List.rev acc
+      | [x] -> go (f x :: acc) []
+      | x :: xs -> go ((f x <> sep) :: acc) xs
+    in go []
+
+  module Characters = struct
+    let qmark = text "?"
+    let bang = text "!"
+    let at = text "@"
+    let sharp = text "#"
+    let dollar = text "$"
+    let percent = text "%"
+    let caret = text "^"
+    let ampersand = text "&"
+    let star = text "*"
+
+    let comma = text ","
+    let dot = text "."
+    let bar = text "|"
+    let colon = text ":"
+    let scolon = text ";"
+    let equals = text "="
+
+    let plus = text "+"
+    let minus = text "-"
+    let underscore = text "_"
+    let tilde = text "~"
+
+    let squote = text "'"
+    let dquote = text "\""
+    let bquote = text "`"
+
+    let slash = text "/"
+    let bslash = text "\\"
+
+    let lt = text "<"
+    let gt = text ">"
+    let lbrack = text "["
+    let rbrack = text "]"
+    let lbrace = text "{"
+    let rbrace = text "}"
+    let lparen = text "("
+    let rparen = text ")"
+
+    let space = text " "
+  end
+
 end
