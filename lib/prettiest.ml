@@ -214,7 +214,7 @@ module Make (W : Width) : S = struct
   let text s = List.filter ~f:(MeasureText.valid W.width) [MeasureText.text s]
 
   let render xs =
-    List.min_elt xs ~cmp:MeasureText.compare |>
+    List.min_elt xs ~compare:MeasureText.compare |>
     Option.map ~f:MeasureText.render
 
   let fail = []

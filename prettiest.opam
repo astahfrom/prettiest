@@ -11,9 +11,9 @@ build: [
   ["jbuilder" "build" "-p" name "-j" jobs]
 ]
 depends: [
-  "base"
+  "base" {>= "v0.13.2"}
   "ppx_compare"
-  "ocaml-migrate-parsetree"
+  "ocaml-migrate-parsetree" {< "2.0.0"}
   "jbuilder" {build & >= "1.0+beta12"}
 ]
 available: [ ocaml-version >= "4.04.1" ]
