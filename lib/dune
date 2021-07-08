@@ -1,5 +1,4 @@
 (library
- (name prettiest)
  (public_name prettiest)
  (libraries base)
  (preprocess
