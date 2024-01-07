@@ -58,5 +58,3 @@ let%expect_test "sexp" =
        (a b c d)
        (a b c d))))
   |}]
-
-let () = Ppx_inline_test_lib.Runtime.exit ()

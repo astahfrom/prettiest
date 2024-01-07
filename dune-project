@@ -1,5 +1,3 @@
-(lang dune 2.0)
+(lang dune 3.6)
 
 (name prettiest)
-
-(formatting disabled)

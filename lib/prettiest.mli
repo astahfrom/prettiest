@@ -115,4 +115,4 @@ module type S = sig
   end
 end
 
-module Make (W : Width) : S
+module Make (_ : Width) : S

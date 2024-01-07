@@ -25,7 +25,7 @@ module Check (P : Prettiest.S) = struct
 
   let doc_gen : P.t Quickcheck.Generator.t =
     let open Gen.Let_syntax in
-    Gen.recursive (fun self ->
+    Gen.fixed_point (fun self ->
         match%bind Gen.size with
         | 0 -> text_gen
         | n -> 
